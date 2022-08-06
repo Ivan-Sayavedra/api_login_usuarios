@@ -1,0 +1,42 @@
+from rest_framework import serializers
+
+from profiles_api import models
+
+class HelloSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=10)
+    
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = models.UserProfile
+        fields = ('id', 'email', 'name', 'password')
+        extra_kwargs = {
+            'password': {
+                'write_only': True,
+                'style': {'input_type':'password'}
+            }
+        }
+    
+    # Crear y retornar nuevo usuario    
+    def create(self, validated_data):
+        user = models.UserProfile.objects.create_user(
+            email=validated_data['email'],
+            name=validated_data['name'],
+            password=validated_data['password']
+        )
+        return user
+    
+    def update(self, instance, validated_data):
+        if 'password' in validated_data:
+            password = validated_data.pop('password') # -> Para evitar problema cuando el usuario está logeado
+            instance.set_password(password)
+        
+        return super().update(instance, validated_data)
+    
+
+""" Serializador de Profile feed items """
+class ProfileFeedItemSerializer(serializers.ModelSerializer):
+    model = models.ProfileFeedItem
+    fields = ('id','user_profile','status_text','created_on')
+    extra_kwargs = {'user_profile': {'read-only':True}}
